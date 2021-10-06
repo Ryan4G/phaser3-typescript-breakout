@@ -1,2 +1,2 @@
-# phaser3-typescript-breakout
-A breakout game using phaser3 with typescript.
+# phaser3-typescript-template
+phaser3 template for using typescript
