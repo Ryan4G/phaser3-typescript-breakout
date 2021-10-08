@@ -1,0 +1,22 @@
+{
+  "resources": [
+    "./public/assets/sounds/breakout.mp3"
+  ],
+  "spritemap": {
+    "hitwall": {
+      "start": 0.20,
+      "end": 0.45,
+      "loop": false
+    },
+    "hitpaddle": {
+      "start": 0.75,
+      "end": 0.95,
+      "loop": false
+    },
+    "hitblock": {
+      "start": 1.30,
+      "end": 1.45,
+      "loop": false
+    }
+  }
+}

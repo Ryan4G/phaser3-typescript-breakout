@@ -1,7 +1,10 @@
+import EffectType from "~enums/EffectType";
+
 export default class Paddle extends Phaser.Physics.Matter.Image{
 
     private _ball?: Phaser.Physics.Matter.Image;
-
+    private _type: EffectType;
+    
     /**
      * 
      * @param world A reference to the Matter.World instance that this body belongs to.
@@ -16,6 +19,12 @@ export default class Paddle extends Phaser.Physics.Matter.Image{
         super(world, x, y, texture, frame, options);
 
         world.scene.add.existing(this);
+
+        this._type = EffectType.None;
+    }
+
+    get effectType(){
+        return this._type;
     }
 
     attachBall(ball: Phaser.Physics.Matter.Image){
@@ -30,9 +39,11 @@ export default class Paddle extends Phaser.Physics.Matter.Image{
             let vec = new Phaser.Math.Vector2(
                 this.scene.scale.width * 0.5 - this._ball.x,
                 this.scene.scale.height * 0.5 - this._ball.y
-            ).normalize().scale(10);
+            ).normalize().scale(30);
             this._ball?.setVelocity(vec.x, vec.y);
             this._ball = undefined;
+            
+            this.scene.sound.playAudioSprite('sfx', 'hitpaddle');
         }
     }
 
@@ -54,5 +65,47 @@ export default class Paddle extends Phaser.Physics.Matter.Image{
         if (this._ball){
             this._ball.x = this.x;
         }
+    }
+
+    catchEffect(type: EffectType){
+        switch(type){
+            case EffectType.None:{
+                break;
+            }
+            case EffectType.Sticky:{
+                break;
+            }
+            case EffectType.Large:{
+                
+                if (this._type !== EffectType.Large){
+                    this.scene.add.tween(
+                        {
+                            targets: this,
+                            width: this.width * 2,
+                            ease: 'Expo.easeInOut',
+                            duration: 500,
+                        }
+                    );
+                }
+
+                break;
+            }
+            case EffectType.Small:{
+
+                if (this._type !== EffectType.Small){
+                    this.scene.add.tween(
+                        {
+                            targets: this,
+                            width: this.width * 0.5,
+                            ease: 'Expo.easeInOut',
+                            duration: 500,
+                        }
+                    );
+                }
+                break;
+            }
+        }
+
+        this._type = type;
     }
 }
