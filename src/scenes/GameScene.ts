@@ -18,7 +18,7 @@ export default class GameScene extends Phaser.Scene {
 
     private _cursor?: Phaser.Types.Input.Keyboard.CursorKeys;
     private _paddle?: Paddle;
-    private _ball?: Phaser.Physics.Arcade.Image;
+    private _ball?: Ball;
     private _blocks?: Phaser.Physics.Arcade.StaticGroup;
     private _lives: number = 3;
     private _level: number = 1;
@@ -52,17 +52,18 @@ export default class GameScene extends Phaser.Scene {
             lives: this._lives
         });
 
-        this.physics.world.setBounds(0, 32, this.scale.width, this.scale.height - 32, true, true, true, true);
+        this.physics.world.setBounds(0, 32, this.scale.width, this.scale.height - 32, true, true, true, false);
 
         this._cursor = this.input.keyboard.createCursorKeys();
 
         this._paddle = new Paddle(this, 400, 550, 'breakout', 'paddle1');
         
         this._balls = this.physics.add.group({
-            classType: Ball
+            classType: Ball,
+            runChildUpdate: true
         });
 
-        this.initBall();
+        this._ball = this.getBall(400, 500);
 
         this._blocks = this.physics.add.staticGroup();
         this._effects = this.physics.add.group({
@@ -74,8 +75,7 @@ export default class GameScene extends Phaser.Scene {
 
         this._paddle.attachBall(this._ball!);
 
-        this.physics.add.collider(this._balls, this._blocks, (obj1, obj2) => {
-
+        const ballBlockCollider = this.physics.add.collider(this._balls, this._blocks, (obj1, obj2) => {
             let theBall = obj1 as Ball;
             let theBlock = obj2 as Phaser.Types.Physics.Arcade.ImageWithStaticBody;
 
@@ -111,23 +111,73 @@ export default class GameScene extends Phaser.Scene {
             }
         });
 
+        const ballBlockOverlap = this.physics.add.overlap(this._balls, this._blocks, (obj1, obj2) => {
+            let theBall = obj1 as Ball;
+            let theBlock = obj2 as Phaser.Types.Physics.Arcade.ImageWithStaticBody;
+
+            if (theBlock){
+                let effectType = theBlock.getData('effect') as EffectType;
+
+                if (effectType !== undefined && effectType !== EffectType.None){
+
+                    let theEffect = this._effects!.get(
+                        theBlock.x, 
+                        theBlock.y, 
+                        'effect', 
+                        'Large'
+                    ) as Effect;
+
+                    theEffect.setVelocityY(40);
+                    theEffect.makeEffect(effectType);
+                }
+            }
+
+            theBlock.destroy(true);
+
+            this.sound.playAudioSprite('sfx', 'hitblock');
+
+            if(this.checkCompleteLevel()){
+                
+                sceneEvents.emit(
+                    EVENT_NEXT_LEVEL,
+                    ++this._level
+                );
+
+                this.scene.restart();
+            }
+        });
+
+        ballBlockOverlap.active = false;
+        
         this.physics.add.collider(this._balls, this._paddle, (obj1, obj2) => {
 
-            let theBall = obj1 as Ball;
-            if (this._paddle?.attched){
+            //console.log(obj1, obj2);
+
+            let theBall = obj2 as Ball;
+            let thePaddle = this._paddle;
+
+            if (!thePaddle){
+                return;
+            }
+
+            if (theBall.getData('attached')){
                 return;
             }
 
             this.sound.playAudioSprite('sfx', 'hitpaddle');
 
-            if (this._paddle?.effectType === EffectType.Sticky){
-                this._paddle.attachBall(theBall!);
+            if (theBall.effectType === EffectType.Sticky){
+                if (thePaddle.attchedBall){
+                    this._paddle?.launch();
+                }
+
+                this._paddle?.attachBall(theBall);
             }
             else{
-                let velocity = (this._paddle!.x - theBall!.x) * 20;
+                let velocity = theBall.body.velocity.x;
 
                 if (this._paddle!.x === theBall!.x){
-                    velocity = Phaser.Math.Between(-2, 2) * 20;
+                    velocity = theBall.body.velocity.x + Phaser.Math.Between(-2, 2);
                 }
 
                 theBall?.setVelocityX(velocity);
@@ -142,6 +192,51 @@ export default class GameScene extends Phaser.Scene {
             if (theEffect){
                 let effectType = theEffect.effectType;
                 this._paddle?.catchEffect(effectType);
+
+                if (effectType === EffectType.Split){
+                    let currentBalls = this._balls?.getChildren();
+                    
+                    if (this._paddle?.attchedBall){
+                        this._paddle.launch();
+                    }
+
+                    currentBalls?.forEach(item=>{
+                        
+                        let add_idx = 0;
+
+                        while(add_idx < 2){
+
+                            let ball = this.getBall(
+                                item.body.position.x,
+                                item.body.position.y
+                            );
+
+                            ball.setVelocity(
+                                item.body.velocity.x + Phaser.Math.Between(5, 10) * (add_idx > 0 ? 1 : -1),
+                                item.body.velocity.y + Phaser.Math.Between(5, 10) * (add_idx > 0 ? 1 : -1)
+                            );
+
+                            add_idx++;
+                        }
+
+                    });
+
+                    effectType = EffectType.None;
+                }
+                
+                if (effectType === EffectType.Bolder){
+                    ballBlockCollider.active = false;
+                    ballBlockOverlap.active = true;
+                }
+                else if (effectType === EffectType.Sticky || effectType === EffectType.None){
+                    ballBlockCollider.active = true;
+                    ballBlockOverlap.active = false;
+                }
+
+                this._balls?.getChildren().forEach(item=>{
+                    let ball = item as Ball;
+                    ball.catchEffect(effectType);
+                });
 
                 theEffect.destroy(true);
             }
@@ -178,7 +273,7 @@ export default class GameScene extends Phaser.Scene {
             );
 
             if (this._lives > 0){
-                this.initBall();
+                this._ball = this.getBall(400, 500);
                 this._paddle.attachBall(this._ball!);
             }
             else{
@@ -189,20 +284,18 @@ export default class GameScene extends Phaser.Scene {
         }
     }
 
-    private initBall(){
+    private getBall(x: number, y: number){
 
-        this._ball = this._balls?.get(
-            400, 500, 'breakout', 'ball1'
+        let ball = this._balls?.get(
+            x, y, 'breakout', 'ball1'
         ) as Ball;
         
-        this._ball.setBounce(1);
-        this._ball.setFriction(0);
-        (this._ball.body as Phaser.Physics.Arcade.Body).setCollideWorldBounds(true, 1, 1, true);
-        this._ball.setData('id', '1');
-        this._ball.setCircle(11);
-        console.log(this._ball.body.onWorldBounds)
+        ball.setBounce(1);
+        ball.setFriction(0);
+        (ball.body as Phaser.Physics.Arcade.Body).setCollideWorldBounds(true, 1, 1, true);
+        ball.setCircle(11);
 
-        return this._ball;
+        return ball;
     }
 
     private initBlocks(level: number){
@@ -281,7 +374,6 @@ export default class GameScene extends Phaser.Scene {
     }
 
     private checkCompleteLevel(){
-        //return !this._blocks?.some(item => item.visible);
-        return false;
+        return this._blocks?.getTotalUsed() === 0;
     }
 }

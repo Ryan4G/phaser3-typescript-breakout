@@ -1,8 +1,9 @@
 import EffectType from "~enums/EffectType";
+import Ball from "./Ball";
 
 export default class Paddle extends Phaser.Physics.Arcade.Image{
 
-    private _ball?: Phaser.Physics.Arcade.Image;
+    private _ball?: Ball;
     private _type: EffectType;
     
     /**
@@ -26,22 +27,24 @@ export default class Paddle extends Phaser.Physics.Arcade.Image{
         this._type = EffectType.None;
     }
 
-    get attched(){
-        return this._ball !== undefined;
+    get attchedBall(){
+        return this._ball != undefined;
     }
 
     get effectType(){
         return this._type;
     }
 
-    attachBall(ball: Phaser.Physics.Arcade.Image){
+    attachBall(ball: Ball){
         this._ball = ball;
-        this._ball.x = this.x;
-
-        let y = this.y - this.height * 0.5 - ball.height * 0.5;
-
-        this._ball.y = y;
         this._ball.setVelocity(0);
+
+        this._ball.x = this.x;
+        let y = this.y - this.height * 0.5 - ball.height * 0.5;
+        this._ball.y = y;
+
+        console.log(ball.y);
+        this._ball.setData('attached', true);
     }
 
     launch(){
@@ -50,7 +53,9 @@ export default class Paddle extends Phaser.Physics.Arcade.Image{
                 this.scene.scale.width * 0.5 - this._ball.x,
                 this.scene.scale.height * 0.5 - this._ball.y
             ).normalize().scale(300);
-            this._ball?.setVelocity(vec.x, vec.y);
+            this._ball.setVelocity(vec.x, vec.y);
+            this._ball.setData('attached', false);
+            
             this._ball = undefined;
             
             this.scene.sound.playAudioSprite('sfx', 'hitpaddle');
@@ -59,8 +64,8 @@ export default class Paddle extends Phaser.Physics.Arcade.Image{
 
     update(cursor: Phaser.Types.Input.Keyboard.CursorKeys){
 
-        let canLeft = this.x > this.width * 0.5;
-        let canRight = this.x < this.scene.scale.width - this.width * 0.5;
+        let canLeft = this.x > this.width * this.scaleX * 0.5;
+        let canRight = this.x < this.scene.scale.width - this.width * this.scaleX * 0.5;
 
         if (cursor?.left.isDown && canLeft){
             this.x -= 10;
@@ -80,9 +85,6 @@ export default class Paddle extends Phaser.Physics.Arcade.Image{
     catchEffect(type: EffectType){
         switch(type){
             case EffectType.None:{
-                break;
-            }
-            case EffectType.Sticky:{
                 break;
             }
             case EffectType.Large:{
@@ -113,6 +115,9 @@ export default class Paddle extends Phaser.Physics.Arcade.Image{
                     );
                 }
                 break;
+            }
+            default:{
+                return;
             }
         }
 

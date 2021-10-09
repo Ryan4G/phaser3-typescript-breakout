@@ -26,6 +26,25 @@ export default class Ball extends Phaser.Physics.Arcade.Image{
         return this._type;
     }
     
+    catchEffect(type: EffectType){
+        switch(type){
+            case EffectType.None:{
+                break;
+            }
+            case EffectType.Sticky:{
+                break;
+            }
+            case EffectType.Bolder:{
+                break;
+            }
+            default:{
+                return;
+            }
+        }
+
+        this._type = type;
+    }
+
     update(time: number, delta: number){
         //console.log(this.y);
         if (this.y > this.scene.scale.height){
