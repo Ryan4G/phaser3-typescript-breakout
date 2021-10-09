@@ -1,6 +1,6 @@
 import EffectType from "~enums/EffectType";
 
-export default class Effect extends Phaser.Physics.Arcade.Image{
+export default class Ball extends Phaser.Physics.Arcade.Image{
 
     private _type: EffectType;
 
@@ -25,33 +25,7 @@ export default class Effect extends Phaser.Physics.Arcade.Image{
     get effectType(){
         return this._type;
     }
-
-    makeEffect(type: EffectType){
-        switch(type){
-            case EffectType.Large:{
-                this.setFrame('Large');
-                break;
-            }
-            case EffectType.Small:{
-                this.setFrame('Small');
-                break;
-            }
-            case EffectType.Split:{
-                this.setFrame('Split');
-                break;
-            }
-            case EffectType.Sticky:{
-                this.setFrame('Sticky');
-                break;
-            }
-            case EffectType.Bolder:{
-                this.setFrame('Bolder');
-                break;
-            }
-        }
-        this._type = type;
-    }
-
+    
     update(time: number, delta: number){
         //console.log(this.y);
         if (this.y > this.scene.scale.height){

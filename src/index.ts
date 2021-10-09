@@ -10,10 +10,10 @@ const config: Phaser.Types.Core.GameConfig = {
 	height: 600,
     backgroundColor: '#000000',
 	physics: {
-		default: 'matter',
-		matter: {
+		default: 'arcade',
+		arcade: {
 			gravity: { y: 0 },
-			debug: false
+			debug: true
 		}
 	},
 	scene: [PreloadScene, GameScene, GameUIScene]
