@@ -3,6 +3,7 @@ import BlockColors from '~enums/BlockColors';
 import EffectType from '~enums/EffectType';
 import { EVENT_BALL_LOST, EVENT_GAME_OVER, EVENT_NEXT_LEVEL, sceneEvents } from '~events/GameEvents';
 import IGameInfo from '~interfaces/IGameInfo';
+import IGamePad from '~interfaces/IGamePad';
 import Ball from '~sprites/Ball';
 import Effect from '~sprites/Effect';
 import Paddle from '~sprites/Paddle';
@@ -28,7 +29,8 @@ export default class GameScene extends Phaser.Scene {
     private _effects?: Phaser.Physics.Arcade.Group;
     private _balls?: Phaser.Physics.Arcade.Group;
 
-    private _ballCount:number = 1;
+    private _ballCount: number = 1;
+    private _pointerDown: boolean = false;
 
     constructor() {
         super('GameScene');
@@ -43,6 +45,8 @@ export default class GameScene extends Phaser.Scene {
         }
 
         this._ballCollideWall = new Map<string, number>();
+        this._ball = undefined;
+        this._pointerDown = false;
     }
 
     create()
@@ -174,19 +178,19 @@ export default class GameScene extends Phaser.Scene {
                 this._paddle?.attachBall(theBall);
             }
             else{
-                let velocity = theBall.body.velocity.x;
+                let velocity = theBall.x - thePaddle.x;
 
-                if (this._paddle!.x === theBall!.x){
-                    velocity = theBall.body.velocity.x + Phaser.Math.Between(-2, 2);
+                if (velocity === 0){
+                    velocity = Phaser.Math.Between(-1, 1);
                 }
-
-                theBall?.setVelocityX(velocity);
+                
+                theBall?.setVelocityX(Math.sign(velocity) * 300);
             }
         });
         
         this.physics.add.overlap(this._paddle, this._effects, (obj1, obj2)=>{
 
-            console.log('overlap')
+            // console.log('overlap')
             let theEffect = obj2 as Effect;
 
             if (theEffect){
@@ -246,13 +250,16 @@ export default class GameScene extends Phaser.Scene {
             Phaser.Physics.Arcade.Events.WORLD_BOUNDS,
             (body: Phaser.Physics.Arcade.Body) => {
                 
-                console.log(body);
+                //console.log(body);
 
                 if (this._balls?.contains(body.gameObject)){
                     this.sound.playAudioSprite('sfx', 'hitwall');
                 }
             }
         );
+
+
+        this.input.addPointer();
     }
 
     update() {
@@ -261,7 +268,25 @@ export default class GameScene extends Phaser.Scene {
             return;
         }
 
-        this._paddle.update(this._cursor);
+        let gamePad:IGamePad = {
+            left: this._cursor.left.isDown,
+            right: this._cursor.right.isDown,
+            space: this._cursor.space.isDown,
+        };
+
+        let p = this.input.activePointer;
+        if (p.isDown){
+            gamePad.left = p.x < this._paddle.x;
+            gamePad.right = p.x > this._paddle.x;
+            this._pointerDown = true;
+        }
+
+        if (this._pointerDown && p.leftButtonReleased()){
+            this._pointerDown = false;
+            gamePad.space = true;
+        }
+
+        this._paddle.update(gamePad);
 
         this._ballCount = this._balls!.getTotalUsed();
 
@@ -326,8 +351,8 @@ export default class GameScene extends Phaser.Scene {
 
             let blockEffectMap = new Map<number, EffectType>();
 
-            console.log(effectArr)
-            console.log(blockNumberArr)
+            // console.log(effectArr)
+            // console.log(blockNumberArr)
 
             for(let idx = 0; idx < effectArr.length; idx++){
                 let num = effectArr[idx];
@@ -343,7 +368,7 @@ export default class GameScene extends Phaser.Scene {
                 }
             }
 
-            console.log(blockEffectMap)
+            // console.log(blockEffectMap)
             let blockIdx = 0;
 
             for(let row = 0; row < map.data.length; row++){
@@ -364,7 +389,7 @@ export default class GameScene extends Phaser.Scene {
                     ) as Phaser.Types.Physics.Arcade.ImageWithStaticBody;                
                     
                     if (blockEffectMap.get(blockIdx) !== undefined){
-                        console.log(blockIdx)
+                        // console.log(blockIdx)
                         block.setData('effect', blockEffectMap.get(blockIdx));
                     }
             

@@ -6,6 +6,12 @@ import GameUIScene from '~scenes/GameUIScene';
 
 const config: Phaser.Types.Core.GameConfig = {
 	type: Phaser.AUTO,
+	scale: {
+		mode: Phaser.Scale.FIT,
+        parent: 'phaser-main',
+		width: 800,
+		height: 600,
+	},
 	width: 800,
 	height: 600,
     backgroundColor: '#000000',
@@ -13,7 +19,7 @@ const config: Phaser.Types.Core.GameConfig = {
 		default: 'arcade',
 		arcade: {
 			gravity: { y: 0 },
-			debug: true
+			debug: false
 		}
 	},
 	scene: [PreloadScene, GameScene, GameUIScene]

@@ -55,7 +55,7 @@ export default class Effect extends Phaser.Physics.Arcade.Image{
     update(time: number, delta: number){
         //console.log(this.y);
         if (this.y > this.scene.scale.height){
-            console.log('update');
+            // console.log('update');
             this.destroy(true);
         }
     }

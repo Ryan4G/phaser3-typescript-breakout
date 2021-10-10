@@ -1,4 +1,5 @@
 import EffectType from "~enums/EffectType";
+import IGamePad from "~interfaces/IGamePad";
 import Ball from "./Ball";
 
 export default class Paddle extends Phaser.Physics.Arcade.Image{
@@ -43,7 +44,7 @@ export default class Paddle extends Phaser.Physics.Arcade.Image{
         let y = this.y - this.height * 0.5 - ball.height * 0.5;
         this._ball.y = y;
 
-        console.log(ball.y);
+        //console.log(ball.y);
         this._ball.setData('attached', true);
     }
 
@@ -62,18 +63,18 @@ export default class Paddle extends Phaser.Physics.Arcade.Image{
         }
     }
 
-    update(cursor: Phaser.Types.Input.Keyboard.CursorKeys){
+    update(cursor: IGamePad){
 
         let canLeft = this.x > this.width * this.scaleX * 0.5;
         let canRight = this.x < this.scene.scale.width - this.width * this.scaleX * 0.5;
 
-        if (cursor?.left.isDown && canLeft){
+        if (cursor.left && canLeft){
             this.x -= 10;
         }
-        else if (cursor?.right.isDown && canRight){
+        else if (cursor.right && canRight){
             this.x += 10;
         }
-        else if (cursor.space.isDown){
+        else if (cursor.space){
             this.launch();
         }
 
